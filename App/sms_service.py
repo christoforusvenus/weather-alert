@@ -4,24 +4,27 @@ from twilio.base.exceptions import TwilioRestException
 
 
 def send_sms(to: str, body: str) -> str:
-    sid = os.getenv("TWILIO_ACCOUNT_SID")
-    token = os.getenv("TWILIO_AUTH_TOKEN")
+    account_sid = os.getenv("TWILIO_ACCOUNT_SID")
+    auth_token = os.getenv("TWILIO_AUTH_TOKEN")
     from_number = os.getenv("TWILIO_FROM_NUMBER")
 
-    if not sid or not token or not from_number:
+    if not account_sid or not auth_token or not from_number:
         raise RuntimeError(
-            "Twilio env missing: TWILIO_ACCOUNT_SID / TWILIO_AUTH_TOKEN / TWILIO_FROM_NUMBER"
+            "Missing Twilio configuration "
+            "(TWILIO_ACCOUNT_SID / TWILIO_AUTH_TOKEN / TWILIO_FROM_NUMBER)"
         )
 
-    client = Client(sid, token)
+    client = Client(account_sid, auth_token)
 
     try:
-        msg = client.messages.create(
+        message = client.messages.create(
             to=to,
             from_=from_number,
             body=body,
         )
-        return msg.sid
+        return message.sid
+
     except TwilioRestException as e:
-        # helpful error for trial / invalid number / permissions
-        raise RuntimeError(f"Twilio failed: {e.msg} (code={e.code})") from e
+        raise RuntimeError(
+            f"Twilio SMS failed (code={e.code}): {e.msg}"
+        ) from e
