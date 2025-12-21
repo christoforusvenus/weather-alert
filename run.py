@@ -4,7 +4,6 @@ from App import db, create_app
 app = create_app()
 
 if __name__ == "__main__":
-    # Create tables only for local/dev (optional)
     if os.getenv("FLASK_ENV", "development") != "production":
         with app.app_context():
             db.create_all()
@@ -13,5 +12,4 @@ if __name__ == "__main__":
     port = int(os.getenv("PORT", "5000"))
     debug = os.getenv("FLASK_DEBUG", "1") == "1"
 
-    # For deploy platforms, set HOST=0.0.0.0 and FLASK_DEBUG=0
     app.run(host=host, port=port, debug=debug)
