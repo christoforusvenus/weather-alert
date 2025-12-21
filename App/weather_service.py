@@ -53,7 +53,6 @@ def collect_bad_weather_times(forecast_data: dict, hours: int = 24) -> Dict[str,
     now_utc = datetime.now(timezone.utc)
     limit_utc = now_utc + timedelta(hours=hours)
 
-    # OpenWeather provides city.timezone as seconds offset from UTC
     tz_offset_sec = int(forecast_data.get("city", {}).get("timezone", 0))
 
     events: Dict[str, List[str]] = defaultdict(list)
