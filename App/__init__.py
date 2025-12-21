@@ -6,7 +6,7 @@ import os
 db = SQLAlchemy()
 
 def create_app():
-    load_dotenv()  # OK untuk local
+    load_dotenv()
 
     app = Flask(__name__, template_folder="../templates")
 
