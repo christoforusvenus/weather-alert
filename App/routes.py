@@ -1,4 +1,4 @@
-from flask import Blueprint, request, render_template, jsonify
+from flask import Blueprint, request, render_template, jsonify, redirect, url_for
 import os
 import re
 import uuid
@@ -16,7 +16,7 @@ main = Blueprint("main", __name__)
 
 @main.route("/", methods=["GET"])
 def home():
-    return "Weather Alert API is running ✅", 200
+    return redirect(url_for("main.subscribe_form"))
 
 
 def normalize_phone(phone: str) -> str:
