@@ -23,10 +23,8 @@ def normalize_phone(phone: str) -> str:
     if not phone:
         return ""
 
-    # hapus spasi, dash, dll (tetap izinkan +)
     phone = re.sub(r"[^\d+]", "", phone)
 
-    # ❌ TOLAK kalau tidak diawali +
     if not phone.startswith("+"):
         return ""
 
@@ -77,11 +75,9 @@ def create_subscriber(phone: str, country: str, postal_code: str):
     if lat is None or lon is None:
         return None, "Geocoding failed! (lat/lon) is missing", 400
 
-    # Timezone (IANA) dari lat/lon (bisa None)
     tf = TimezoneFinder()
     tz_name = tf.timezone_at(lat=float(lat), lng=float(lon))
 
-    # CASE 2: nomor sudah ada tapi nonaktif → REACTIVATE
     if existing and not existing.is_active:
         existing.country = country
         existing.postal_code = postal_code
@@ -97,9 +93,8 @@ def create_subscriber(phone: str, country: str, postal_code: str):
         existing.last_notified_at = None
 
         db.session.commit()
-        return existing, None, 200  # reactivated
+        return existing, None, 200
 
-    # CASE 3: nomor belum ada → CREATE BARU
     subscriber = Subscriber(
         phone=phone,
         country=country,
