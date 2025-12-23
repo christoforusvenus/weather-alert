@@ -22,7 +22,11 @@ def send_alerts_job(limit: int | None = None) -> dict:
     stats = {"checked": 0, "alerted": 0, "skipped": 0, "errors": 0}
     now_utc = datetime.now(timezone.utc)
 
-    base_url = os.getenv("BASE_URL", "http://127.0.0.1:5000")
+    base_url = os.getenv("BASE_URL", "").strip()
+    if not base_url:
+        base_url = "http://127.0.0.1:5000"
+    if "127.0.0.1" in base_url or "localhost" in base_url:
+        print("[WARN] BASE_URL looks like localhost. Set BASE_URL in Render env.")
 
     for s in subs:
         stats["checked"] += 1
