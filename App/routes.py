@@ -197,3 +197,8 @@ def admin_run_alerts():
 
     stats = send_alerts_job()
     return jsonify({"ok": True, "stats": stats}), 200
+
+@main.route("/u/<token>", methods=["GET"])
+def unsubscribe_short(token):
+    return unsubscribe(token)
+

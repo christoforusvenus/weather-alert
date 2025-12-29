@@ -12,6 +12,7 @@ FORCE_SEND_ALERT = os.getenv("FORCE_SEND_ALERT", "false").lower() == "true"
 
 
 WINDOW_MINUTES = int(os.getenv("SEND_WINDOW_MINUTES", "15"))
+MAX_SMS_LEN = int(os.getenv("MAX_SMS_LEN", "280"))
 TARGET_HOUR = int(os.getenv("DAILY_SEND_HOUR_LOCAL", "6"))
 
 
@@ -71,8 +72,12 @@ def send_alerts_job(limit: int | None = None) -> dict:
                 stats["skipped"] += 1
                 continue
 
-            unsubscribe_url = f"{base_url}/unsubscribe/{s.unsubscribe_token}"
-            full_msg = sms_text + f"\n\nUnsubscribe: {unsubscribe_url}"
+            unsub_url = f"{base_url}/u/{s.unsubscribe_token}"
+            full_msg = sms_text + f"\nUnsub: {unsub_url}"
+
+            # hard limit untuk aman di Twilio trial
+            if len(full_msg) > MAX_SMS_LEN:
+                full_msg = full_msg[: MAX_SMS_LEN - 3] + "..."
 
             msg_sid = send_sms(to=s.phone, body=full_msg)
             print(

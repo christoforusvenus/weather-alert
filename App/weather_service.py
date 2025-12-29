@@ -98,22 +98,30 @@ def _limit_times(times: List[str], max_items: int = 4) -> str:
 def build_sms(country: str, postal_code: str, events: Dict[str, List[str]]) -> str:
     country = (country or "").upper().strip()
 
-    lines = [
-        f"⚠️ Weather alert ({country}-{postal_code})",
-        "Next 24h:",
-    ]
-
-    if "Rain" in events:
-        lines.append(f"🌧️ Rain ~ {_limit_times(events['Rain'])}")
-    if "Drizzle" in events:
-        lines.append(f"🌦️ Drizzle ~ {_limit_times(events['Drizzle'])}")
-    if "Snow" in events:
-        lines.append(f"❄️ Snow ~ {_limit_times(events['Snow'])}")
+    labels = []
     if "Thunderstorm" in events:
-        lines.append(f"⛈️ Storm ~ {_limit_times(events['Thunderstorm'])}")
+        labels.append("Storm")
+    if "Snow" in events:
+        labels.append("Snow")
+    if "Rain" in events:
+        labels.append("Rain")
+    if "Drizzle" in events:
+        labels.append("Drizzle")
 
-    lines.append("Be prepared.")
-    return "\n".join(lines)
+    if not labels:
+        return (
+            f"⚠️ Weather alert ({country}-{postal_code})\n"
+            "Bad weather expected today.\n"
+            "Be prepared."
+        )
+
+    types = ", ".join(labels)
+    return (
+        f"⚠️ Weather alert ({country}-{postal_code})\n"
+        f"{types} expected today.\n"
+        "Be prepared."
+    )
+
 
 
 def check_weather_and_build_sms(
