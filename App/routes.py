@@ -22,13 +22,8 @@ def home():
 def normalize_phone(phone: str) -> str:
     if not phone:
         return ""
-
     phone = re.sub(r"[^\d+]", "", phone)
-
-    if not phone.startswith("+"):
-        return ""
-
-    return phone
+    return phone if phone.startswith("+") else ""
 
 
 def create_subscriber(phone: str, country: str, postal_code: str):
@@ -37,11 +32,7 @@ def create_subscriber(phone: str, country: str, postal_code: str):
     postal_code = (postal_code or "").strip()
 
     if not phone:
-        return (
-            None,
-            "Please enter phone number in international format, e.g. +49 1234 5678 90",
-            400,
-        )
+        return None, "Please enter phone number in international format, e.g. +49 1234 5678 90", 400
     if not country or not postal_code:
         return None, "Missing required fields", 400
 
@@ -53,7 +44,6 @@ def create_subscriber(phone: str, country: str, postal_code: str):
     if not api_key:
         return None, "OPENWEATHER_API_KEY is not set", 500
 
-    # Geocoding via OpenWeather ZIP endpoint
     geo_url = "https://api.openweathermap.org/geo/1.0/zip"
     params = {"zip": f"{postal_code},{country}", "appid": api_key}
 
@@ -84,10 +74,8 @@ def create_subscriber(phone: str, country: str, postal_code: str):
         existing.location_name = location_name
         existing.lat = float(lat)
         existing.lon = float(lon)
-
         existing.timezone = tz_name
         existing.last_daily_sent_local_date = None
-
         existing.is_active = True
         existing.unsubscribe_token = uuid.uuid4().hex
         existing.last_notified_at = None
@@ -128,7 +116,7 @@ def subscribe_form():
     return render_template(
         "subscribe.html",
         success=(
-            f"✅ Subscribed successfully! Your postal code is in {loc}. "
+            f"Subscribed successfully! Your postal code is in {loc}. "
             "You will receive a daily alert at 06:00 (local time) if bad weather is expected."
         ),
     ), status
@@ -139,25 +127,20 @@ def unsubscribe(token):
     sub = Subscriber.query.filter_by(unsubscribe_token=token).first()
 
     if not sub:
-        return render_template(
-            "unsubscribe.html",
-            error="Invalid or expired unsubscribe link.",
-        ), 404
+        return render_template("unsubscribe.html", error="Invalid or expired unsubscribe link."), 404
 
     if not sub.is_active:
-        return render_template(
-            "unsubscribe.html",
-            info="You are already unsubscribed.",
-        ), 200
+        return render_template("unsubscribe.html", info="You are already unsubscribed."), 200
 
     sub.is_active = False
     db.session.commit()
 
-    return render_template(
-        "unsubscribe.html",
-        success=True,
-        phone=sub.phone,
-    ), 200
+    return render_template("unsubscribe.html", success=True, phone=sub.phone), 200
+
+
+@main.route("/u/<token>", methods=["GET"])
+def unsubscribe_short(token):
+    return unsubscribe(token)
 
 
 @main.route("/preview/<int:subscriber_id>", methods=["GET"])
@@ -197,8 +180,3 @@ def admin_run_alerts():
 
     stats = send_alerts_job()
     return jsonify({"ok": True, "stats": stats}), 200
-
-@main.route("/u/<token>", methods=["GET"])
-def unsubscribe_short(token):
-    return unsubscribe(token)
-

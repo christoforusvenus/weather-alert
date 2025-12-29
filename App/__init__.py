@@ -1,13 +1,12 @@
+import os
+
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
-from dotenv import load_dotenv
-import os
 
 db = SQLAlchemy()
 
-def create_app():
-    load_dotenv()
 
+def create_app() -> Flask:
     app = Flask(__name__, template_folder="../templates")
 
     db_url = os.getenv("DATABASE_URL")
@@ -26,4 +25,3 @@ def create_app():
         db.create_all()
 
     return app
-

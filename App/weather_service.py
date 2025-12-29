@@ -10,10 +10,10 @@ FORECAST_URL = "https://api.openweathermap.org/data/2.5/forecast"
 
 def is_bad_weather(weather_id: int) -> bool:
     return (
-        200 <= weather_id < 300  # Thunderstorm
-        or 300 <= weather_id < 400  # Drizzle
-        or 500 <= weather_id < 600  # Rain
-        or 600 <= weather_id < 700  # Snow
+        200 <= weather_id < 300
+        or 300 <= weather_id < 400
+        or 500 <= weather_id < 600
+        or 600 <= weather_id < 700
     )
 
 
@@ -34,12 +34,7 @@ def fetch_forecast(lat: float, lon: float) -> dict:
     if not api_key:
         raise RuntimeError("OPENWEATHER_API_KEY is not set")
 
-    params = {
-        "lat": lat,
-        "lon": lon,
-        "appid": api_key,
-        "units": "metric",
-    }
+    params = {"lat": lat, "lon": lon, "appid": api_key, "units": "metric"}
 
     try:
         resp = requests.get(FORECAST_URL, params=params, timeout=15)
@@ -49,9 +44,7 @@ def fetch_forecast(lat: float, lon: float) -> dict:
         raise RuntimeError(f"OpenWeather request failed: {e}") from e
 
 
-def collect_bad_weather_times(
-    forecast_data: dict, hours: int = 24
-) -> Dict[str, List[str]]:
+def collect_bad_weather_times(forecast_data: dict, hours: int = 24) -> Dict[str, List[str]]:
     now_utc = datetime.now(timezone.utc)
     limit_utc = now_utc + timedelta(hours=hours)
 
@@ -67,7 +60,6 @@ def collect_bad_weather_times(
         if t_utc > limit_utc:
             break
 
-        # keep for potential future use (times), but we won't include times in SMS
         t_local = t_utc + timedelta(seconds=tz_offset_sec)
         hhmm = t_local.strftime("%H:%M")
 
@@ -92,7 +84,6 @@ def build_sms(country: str, postal_code: str, events: Dict[str, List[str]]) -> s
     country = (country or "").upper().strip()
     loc = f"{country}-{postal_code}"
 
-    # priority: Storm > Snow > Rain > Drizzle
     if "Thunderstorm" in events:
         return f"Storm alert {loc} today. Stay safe."
     if "Snow" in events:
@@ -105,7 +96,6 @@ def build_sms(country: str, postal_code: str, events: Dict[str, List[str]]) -> s
     return ""
 
 
-
 def check_weather_and_build_sms(
     lat: float,
     lon: float,
@@ -113,19 +103,13 @@ def check_weather_and_build_sms(
     postal_code: str,
     hours: int = 24,
 ) -> Optional[str]:
-    # Read env at runtime (more reliable than module-level constant)
     force_send = os.getenv("FORCE_SEND_ALERT", "false").lower() == "true"
     if force_send:
         country_norm = (country or "").upper().strip()
-        return (
-            f"TEST ALERT ({country_norm}-{postal_code})\n"
-            "Dummy message to test Twilio + scheduler + DB flow."
-        )
+        return f"TEST ALERT {country_norm}-{postal_code}. This is a dummy test message."
 
     forecast = fetch_forecast(lat, lon)
     events = collect_bad_weather_times(forecast, hours=hours)
-
     if not events:
         return None
-
     return build_sms(country, postal_code, events)
