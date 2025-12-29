@@ -5,9 +5,6 @@ from typing import Dict, List, Optional
 
 import requests
 
-FORCE_SEND_ALERT = os.getenv("FORCE_SEND_ALERT", "false").lower() == "true"
-
-
 FORECAST_URL = "https://api.openweathermap.org/data/2.5/forecast"
 
 
@@ -52,12 +49,13 @@ def fetch_forecast(lat: float, lon: float) -> dict:
         raise RuntimeError(f"OpenWeather request failed: {e}") from e
 
 
-def collect_bad_weather_times(forecast_data: dict, hours: int = 24) -> Dict[str, List[str]]:
+def collect_bad_weather_times(
+    forecast_data: dict, hours: int = 24
+) -> Dict[str, List[str]]:
     now_utc = datetime.now(timezone.utc)
     limit_utc = now_utc + timedelta(hours=hours)
 
     tz_offset_sec = int(forecast_data.get("city", {}).get("timezone", 0))
-
     events: Dict[str, List[str]] = defaultdict(list)
 
     for entry in forecast_data.get("list", []):
@@ -69,6 +67,7 @@ def collect_bad_weather_times(forecast_data: dict, hours: int = 24) -> Dict[str,
         if t_utc > limit_utc:
             break
 
+        # keep for potential future use (times), but we won't include times in SMS
         t_local = t_utc + timedelta(seconds=tz_offset_sec)
         hhmm = t_local.strftime("%H:%M")
 
@@ -89,16 +88,14 @@ def collect_bad_weather_times(forecast_data: dict, hours: int = 24) -> Dict[str,
     return dict(events)
 
 
-def _limit_times(times: List[str], max_items: int = 4) -> str:
-    if len(times) <= max_items:
-        return ", ".join(times)
-    return ", ".join(times[:max_items]) + " (+more)"
-
-
 def build_sms(country: str, postal_code: str, events: Dict[str, List[str]]) -> str:
+    """
+    Short, GSM-friendly SMS (no emoji) to avoid multi-segment trial limits.
+    """
     country = (country or "").upper().strip()
 
-    labels = []
+    labels: List[str] = []
+    # prioritize severity
     if "Thunderstorm" in events:
         labels.append("Storm")
     if "Snow" in events:
@@ -110,17 +107,17 @@ def build_sms(country: str, postal_code: str, events: Dict[str, List[str]]) -> s
 
     if not labels:
         return (
-            f"TEST ALERT ({country_norm}-{postal_code})\n"
-            "Dummy message to test Twilio + scheduler + DB flow."
+            f"Weather alert ({country}-{postal_code})\n"
+            "Bad weather expected today.\n"
+            "Be prepared."
         )
 
     types = ", ".join(labels)
     return (
-        f"⚠️ Weather alert ({country}-{postal_code})\n"
+        f"Weather alert ({country}-{postal_code})\n"
         f"{types} expected today.\n"
         "Be prepared."
     )
-
 
 
 def check_weather_and_build_sms(
@@ -130,13 +127,13 @@ def check_weather_and_build_sms(
     postal_code: str,
     hours: int = 24,
 ) -> Optional[str]:
-
-    # ✅ Dummy / testing mode: always send a test SMS (even if weather is fine)
-    if FORCE_SEND_ALERT:
+    # Read env at runtime (more reliable than module-level constant)
+    force_send = os.getenv("FORCE_SEND_ALERT", "false").lower() == "true"
+    if force_send:
         country_norm = (country or "").upper().strip()
         return (
-            f"🧪 TEST ALERT ({country_norm}-{postal_code})\n"
-            f"This is a dummy message to test Twilio + scheduler + DB flow ✅"
+            f"TEST ALERT ({country_norm}-{postal_code})\n"
+            "Dummy message to test Twilio + scheduler + DB flow."
         )
 
     forecast = fetch_forecast(lat, lon)
@@ -146,4 +143,3 @@ def check_weather_and_build_sms(
         return None
 
     return build_sms(country, postal_code, events)
-
