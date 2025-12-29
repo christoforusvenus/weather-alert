@@ -5,6 +5,9 @@ from typing import Dict, List, Optional
 
 import requests
 
+FORCE_SEND_ALERT = os.getenv("FORCE_SEND_ALERT", "false").lower() == "true"
+
+
 FORECAST_URL = "https://api.openweathermap.org/data/2.5/forecast"
 
 
@@ -120,6 +123,15 @@ def check_weather_and_build_sms(
     postal_code: str,
     hours: int = 24,
 ) -> Optional[str]:
+
+    # ✅ Dummy / testing mode: always send a test SMS (even if weather is fine)
+    if FORCE_SEND_ALERT:
+        country_norm = (country or "").upper().strip()
+        return (
+            f"🧪 TEST ALERT ({country_norm}-{postal_code})\n"
+            f"This is a dummy message to test Twilio + scheduler + DB flow ✅"
+        )
+
     forecast = fetch_forecast(lat, lon)
     events = collect_bad_weather_times(forecast, hours=hours)
 
@@ -127,3 +139,4 @@ def check_weather_and_build_sms(
         return None
 
     return build_sms(country, postal_code, events)
+
