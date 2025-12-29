@@ -7,6 +7,9 @@ from App.models import Subscriber
 from App.weather_service import check_weather_and_build_sms
 from App.sms_service import send_sms
 
+FORCE_SEND_ALERT = os.getenv("FORCE_SEND_ALERT", "false").lower() == "true"
+
+
 
 WINDOW_MINUTES = int(os.getenv("SEND_WINDOW_MINUTES", "15"))
 TARGET_HOUR = int(os.getenv("DAILY_SEND_HOUR_LOCAL", "6"))
@@ -44,12 +47,13 @@ def send_alerts_job(limit: int | None = None) -> dict:
 
             now_local = now_utc.astimezone(tz)
 
-            if not (
-                now_local.hour == TARGET_HOUR
-                and now_local.minute < WINDOW_MINUTES
-            ):
-                stats["skipped"] += 1
-                continue
+            if not FORCE_SEND_ALERT:
+                if not (
+                        now_local.hour == TARGET_HOUR
+                        and now_local.minute < WINDOW_MINUTES
+                ):
+                    stats["skipped"] += 1
+                    continue
 
             today_local = now_local.date()
             if getattr(s, "last_daily_sent_local_date", None) == today_local:
