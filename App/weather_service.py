@@ -89,35 +89,21 @@ def collect_bad_weather_times(
 
 
 def build_sms(country: str, postal_code: str, events: Dict[str, List[str]]) -> str:
-    """
-    Short, GSM-friendly SMS (no emoji) to avoid multi-segment trial limits.
-    """
     country = (country or "").upper().strip()
+    loc = f"{country}-{postal_code}"
 
-    labels: List[str] = []
-    # prioritize severity
+    # priority: Storm > Snow > Rain > Drizzle
     if "Thunderstorm" in events:
-        labels.append("Storm")
+        return f"Storm alert {loc} today. Stay safe."
     if "Snow" in events:
-        labels.append("Snow")
+        return f"Snow alert {loc} today. Drive carefully."
     if "Rain" in events:
-        labels.append("Rain")
+        return f"Rain alert {loc} today. Bring an umbrella."
     if "Drizzle" in events:
-        labels.append("Drizzle")
+        return f"Rain alert {loc} today. Bring an umbrella."
 
-    if not labels:
-        return (
-            f"Weather alert ({country}-{postal_code})\n"
-            "Bad weather expected today.\n"
-            "Be prepared."
-        )
+    return ""
 
-    types = ", ".join(labels)
-    return (
-        f"Weather alert ({country}-{postal_code})\n"
-        f"{types} expected today.\n"
-        "Be prepared."
-    )
 
 
 def check_weather_and_build_sms(
