@@ -110,9 +110,8 @@ def build_sms(country: str, postal_code: str, events: Dict[str, List[str]]) -> s
 
     if not labels:
         return (
-            f"⚠️ Weather alert ({country}-{postal_code})\n"
-            "Bad weather expected today.\n"
-            "Be prepared."
+            f"TEST ALERT ({country_norm}-{postal_code})\n"
+            "Dummy message to test Twilio + scheduler + DB flow."
         )
 
     types = ", ".join(labels)
